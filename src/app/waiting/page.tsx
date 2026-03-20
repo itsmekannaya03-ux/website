@@ -1,8 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { QRCodeCanvas } from 'qrcode.react';
-
 interface Topper { name: string; score: number; total: number }
 
 export default function WaitingPage() {
@@ -130,15 +128,6 @@ export default function WaitingPage() {
               </div>
             </div>
           )}
-        </div>
-
-        {/* QR Code Share */}
-        <div className="glass-card" style={{ padding: '1.5rem', marginBottom: '1.5rem', textAlign: 'center' }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '0.75rem' }}>📱 Share with friends</h3>
-          <div style={{ display: 'inline-block', padding: '0.75rem', background: 'white', borderRadius: '12px' }}>
-            <QRCodeCanvas value={typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'} size={120} />
-          </div>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.5rem' }}>Scan to join the quiz</p>
         </div>
 
         {/* Live Stats Section */}

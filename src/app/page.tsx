@@ -135,6 +135,9 @@ export default function HomePage() {
 
   return (
     <div style={{ minHeight: '100vh' }}>
+      <h2 style={{ textAlign: 'center', marginTop: '20px' }}>
+        Updated by Kannaya 🔥
+      </h2>
       {/* ===== HERO SECTION ===== */}
       <section style={{
         minHeight: '85vh',

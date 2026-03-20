@@ -2,8 +2,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-import { QRCodeCanvas } from 'qrcode.react';
-
 interface DashboardData {
   stats: { totalStudents: number; passed: number; failed: number; pending: number };
   toppers: { name: string; email: string; score: number; total: number }[];
@@ -262,20 +260,6 @@ export default function AdminPage() {
               >
                 {data.quizState?.isActive ? '⏹️ Stop Quiz' : '▶️ Start Quiz'}
               </button>
-
-              <div style={{ textAlign: 'center' }}>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '0.75rem' }}>
-                  Share QR Code with students:
-                </p>
-                <div style={{
-                  display: 'inline-block',
-                  padding: '1rem',
-                  background: 'white',
-                  borderRadius: '14px',
-                }}>
-                  <QRCodeCanvas value={appUrl} size={140} />
-                </div>
-              </div>
             </div>
           </div>
 
