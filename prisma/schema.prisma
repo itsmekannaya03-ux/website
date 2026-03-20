@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  pin       String?
+  name      String?
+  branch    String?
+  year      String?
+  role      String   @default("student") // "student" | "admin"
+  blocked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  answers    Answer[]
+  cheatFlags CheatFlag[]
+  result     Result?
+}
+
+model Question {
+  id            String   @id @default(cuid())
+  text          String
+  optionA       String
+  optionB       String
+  optionC       String
+  optionD       String
+  correctOption String   // "A" | "B" | "C" | "D"
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  answers Answer[]
+}
+
+model Answer {
+  id         String   @id @default(cuid())
+  userId     String
+  questionId String
+  selected   String   // "A" | "B" | "C" | "D" | "TIMEOUT"
+  isCorrect  Boolean
+  createdAt  DateTime @default(now())
+
+  user     User     @relation(fields: [userId], references: [id])
+  question Question @relation(fields: [questionId], references: [id])
+
+  @@unique([userId, questionId])
+}
+
+model CheatFlag {
+  id        String   @id @default(cuid())
+  userId    String
+  reason    String   // "tab_switch" | "window_blur" | "page_exit"
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Result {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  totalScore  Int
+  totalQns    Int
+  passed      Boolean
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model QuizState {
+  id        String   @id @default("singleton")
+  isActive  Boolean  @default(false)
+  startTime DateTime?
+  duration  Int      @default(30) // minutes
+  createdAt DateTime @default(now())
+}
