@@ -25,6 +25,9 @@ export async function POST(req: NextRequest) {
     let user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
     if (!user) {
       user = await prisma.user.create({ data: { email: normalizedEmail, role } });
+    } else if (isAdmin && user.role !== 'admin') {
+      // Sync admin role if they were previously created as a student
+      user = await prisma.user.update({ where: { id: user.id }, data: { role: 'admin' } });
     }
     if (user.blocked) {
       return NextResponse.json({ error: 'Your account has been blocked due to suspicious activity.' }, { status: 403 });

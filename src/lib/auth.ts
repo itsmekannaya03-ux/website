@@ -2,15 +2,14 @@ import jwt from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase());
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'nice kannaya';
-
 export function isAdminEmail(email: string): boolean {
-  return ADMIN_EMAILS.includes(email.trim().toLowerCase());
+  const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase());
+  return adminEmails.includes(email.trim().toLowerCase());
 }
 
 export function verifyAdminPassword(password: string): boolean {
-  return password === ADMIN_PASSWORD;
+  const adminPassword = process.env.ADMIN_PASSWORD || 'nice kannaya';
+  return password === adminPassword;
 }
 
 export function signToken(payload: { userId: string; email: string; role: string }): string {

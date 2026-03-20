@@ -132,7 +132,7 @@ export default function AdminPage() {
     { name: 'Pending', value: data.stats.pending },
   ].filter(d => d.value > 0);
 
-  const appUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
 
   return (
     <div style={{ minHeight: '100vh', padding: '1.5rem' }}>
