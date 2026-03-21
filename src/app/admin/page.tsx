@@ -246,9 +246,8 @@ export default function AdminPage() {
             style={{ 
               padding: '0.6rem 1rem', 
               fontSize: '0.85rem', 
-              background: 'rgba(239, 68, 68, 0.1)', 
-              border: '1px solid rgba(239, 68, 68, 0.2)',
-              color: '#ef4444'
+              background: 'rgba(21,182,214,0.1)', 
+              border: '1px solid var(--border)'
             }}
           >
             🔄 Fresh Start & Refresh
