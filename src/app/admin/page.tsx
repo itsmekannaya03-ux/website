@@ -28,18 +28,24 @@ export default function AdminPage() {
   const [newQ, setNewQ] = useState({ text: '', optionA: '', optionB: '', optionC: '', optionD: '', correctOption: 'A' });
   const [saving, setSaving] = useState(false);
 
-  const fetchData = useCallback(async (t?: number) => {
+  const fetchData = async () => {
     try {
-      const res = await fetch(`/api/admin/dashboard?t=${t || Date.now()}`, { cache: 'no-store' });
+      setLoading(true);
+      const res = await fetch(`/api/admin/dashboard?ts=${Date.now()}`, {
+        cache: "no-store",
+      });
       if (res.status === 403) { router.push('/'); return; }
       const d = await res.json();
       setData(d);
       if (d.quizState?.duration && !isEditingDuration) {
         setDuration(d.quizState.duration);
       }
-    } catch { /* ignore */ }
-    setLoading(false);
-  }, [router, isEditingDuration]);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -54,7 +60,7 @@ export default function AdminPage() {
     checkAuth();
     const interval = setInterval(() => fetchData(), 5000);
     return () => clearInterval(interval);
-  }, [router, fetchData]);
+  }, []);
 
   // Global timer countdown
   useEffect(() => {
