@@ -58,8 +58,6 @@ export default function AdminPage() {
       fetchData();
     };
     checkAuth();
-    const interval = setInterval(() => fetchData(), 5000);
-    return () => clearInterval(interval);
   }, []);
 
   // Global timer countdown
@@ -237,10 +235,23 @@ export default function AdminPage() {
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <button
             className="btn-primary"
-            onClick={() => fetchData()}
-            style={{ padding: '0.6rem 1rem', fontSize: '0.85rem', background: 'rgba(21,182,214,0.1)', border: '1px solid var(--border)' }}
+            onClick={async () => {
+              if (window.confirm("🔴 FRESH START: Are you sure you want to delete ALL student records, answers, and results for a clean start? (Admins and Questions will NOT be deleted)")) {
+                await fetch('/api/admin/reset-quiz', { method: 'POST' });
+                await fetchData();
+              } else {
+                await fetchData();
+              }
+            }}
+            style={{ 
+              padding: '0.6rem 1rem', 
+              fontSize: '0.85rem', 
+              background: 'rgba(239, 68, 68, 0.1)', 
+              border: '1px solid rgba(239, 68, 68, 0.2)',
+              color: '#ef4444'
+            }}
           >
-            🔄 Refresh
+            🔄 Fresh Start & Refresh
           </button>
           <button className="btn-danger" onClick={handleLogout} style={{ padding: '0.6rem 1rem', fontSize: '0.85rem' }}>
             Logout
