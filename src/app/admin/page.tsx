@@ -37,7 +37,7 @@ export default function AdminPage() {
       if (d.quizState?.duration && !isEditingDuration) {
         setDuration(d.quizState.duration);
       }
-    } catch (e) { console.error(e); }
+    } catch { /* ignore */ }
     setLoading(false);
   }, [router, isEditingDuration]);
 
@@ -49,10 +49,10 @@ export default function AdminPage() {
         router.push('/');
         return;
       }
-      fetchData(Date.now());
+      fetchData();
     };
     checkAuth();
-    const interval = setInterval(() => fetchData(Date.now()), 5000);
+    const interval = setInterval(() => fetchData(), 5000);
     return () => clearInterval(interval);
   }, [router, fetchData]);
 
@@ -231,7 +231,7 @@ export default function AdminPage() {
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
           <button
             className="btn-primary"
-            onClick={() => fetchData(Date.now())}
+            onClick={() => fetchData()}
             style={{ padding: '0.6rem 1rem', fontSize: '0.85rem', background: 'rgba(21,182,214,0.1)', border: '1px solid var(--border)' }}
           >
             🔄 Refresh
