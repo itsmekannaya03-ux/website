@@ -126,7 +126,7 @@ export default function HomePage() {
     return (
       <div className="page-container">
         <div style={{ textAlign: 'center' }}>
-          <img src="/feedex-logo.jpeg" alt="FEEDEX" style={{ width: 80, height: 80, borderRadius: 20, margin: '0 auto 1.5rem', display: 'block' }} />
+          <img src="/feedx-logo.jpeg" alt="FEEDX" style={{ width: 80, height: 80, borderRadius: 20, margin: '0 auto 1.5rem', display: 'block' }} />
           <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>
         </div>
       </div>
@@ -135,9 +135,6 @@ export default function HomePage() {
 
   return (
     <div style={{ minHeight: '100vh' }}>
-      <h2 style={{ textAlign: 'center', marginTop: '20px' }}>
-        Updated by Kannaya 🔥
-      </h2>
       {/* ===== HERO SECTION ===== */}
       <section style={{
         minHeight: '85vh',
@@ -151,8 +148,8 @@ export default function HomePage() {
       }}>
         {/* Big centered logo */}
         <img
-          src="/feedex-logo.jpeg"
-          alt="FEEDEX Logo"
+          src="/feedx-logo.jpeg"
+          alt="FEEDX Logo"
           style={{
             width: 140,
             height: 140,
@@ -164,7 +161,7 @@ export default function HomePage() {
           }}
         />
 
-        {/* FEEDEX COMMUNITY */}
+        {/* FEEDX COMMUNITY */}
         <p style={{
           fontSize: '1rem',
           fontWeight: 600,
@@ -174,7 +171,7 @@ export default function HomePage() {
           marginBottom: '0.75rem',
           animation: 'fadeIn 1s ease-out 0.2s both',
         }}>
-          FEEDEX Community
+          FEEDX Community
         </p>
 
         {/* Event Name - Big & Bold */}

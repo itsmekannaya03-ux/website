@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { getSessionUser } from '@/lib/auth';
@@ -12,6 +13,7 @@ export async function GET() {
     const passed = results.filter((r: { passed: boolean }) => r.passed).length;
     const failed = results.filter((r: { passed: boolean }) => !r.passed).length;
     const pending = totalStudents - results.length;
+    const cheated = await prisma.cheatFlag.findMany({ select: { userId: true }, distinct: ['userId'] });
     const toppers = results.sort((a: { totalScore: number }, b: { totalScore: number }) => b.totalScore - a.totalScore).slice(0, 5);
     const cheatFlags = await prisma.cheatFlag.findMany({ include: { user: true }, orderBy: { createdAt: 'desc' } });
     const blockedUsers = await prisma.user.findMany({ where: { blocked: true } });
@@ -19,7 +21,7 @@ export async function GET() {
     const questions = await prisma.question.findMany({ orderBy: { order: 'asc' } });
 
     return NextResponse.json({
-      stats: { totalStudents, passed, failed, pending },
+      stats: { totalStudents, passed, failed, pending, cheatedCount: cheated.length },
       toppers: toppers.map((t: { user: { name: string | null; email: string }; totalScore: number; totalQns: number }) => ({ name: t.user.name, email: t.user.email, score: t.totalScore, total: t.totalQns })),
       cheatFlags: cheatFlags.map((c: { id: string; user: { name: string | null; email: string }; reason: string; createdAt: Date }) => ({ id: c.id, name: c.user.name, email: c.user.email, reason: c.reason, time: c.createdAt })),
       blockedUsers: blockedUsers.map((u: { id: string; name: string | null; email: string }) => ({ id: u.id, name: u.name, email: u.email })),

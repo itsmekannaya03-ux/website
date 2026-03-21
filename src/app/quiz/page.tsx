@@ -111,7 +111,9 @@ export default function QuizPage() {
         if (!data.quizState?.isActive) {
           clearInterval(poll);
           if (timerRef.current) clearInterval(timerRef.current);
+          // Auto-submit current state
           try { await fetch('/api/quiz/submit', { method: 'POST' }); } catch {}
+          setPhase('review'); // Or directly to result waiting
           router.push('/result');
         }
       } catch {}
@@ -148,7 +150,13 @@ export default function QuizPage() {
   };
 
   const handleReviewChange = (questionId: string, option: string) => {
-    setAnswers(prev => prev.map(a => a.questionId === questionId ? { ...a, selected: option } : a));
+    setAnswers(prev => {
+      const exists = prev.some(a => a.questionId === questionId);
+      if (exists) {
+        return prev.map(a => a.questionId === questionId ? { ...a, selected: option } : a);
+      }
+      return [...prev, { questionId, selected: option, isCorrect: false }];
+    });
     fetch('/api/quiz', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -203,7 +211,7 @@ export default function QuizPage() {
     return (
       <div className="page-container">
         <div style={{ textAlign: 'center' }}>
-          <img src="/feedex-logo.jpeg" alt="FEEDEX" style={{ width: 80, height: 80, borderRadius: 20, margin: '0 auto 1.5rem', display: 'block' }} />
+          <img src="/feedx-logo.jpeg" alt="FEEDX" style={{ width: 80, height: 80, borderRadius: 20, margin: '0 auto 1.5rem', display: 'block' }} />
           <p style={{ color: 'var(--text-secondary)' }}>Loading quiz...</p>
         </div>
       </div>
@@ -227,7 +235,10 @@ export default function QuizPage() {
             const answer = answers.find(a => a.questionId === q.id);
             const selected = answer?.selected || '';
             return (
-              <div key={q.id} className="glass-card" style={{ padding: '1.25rem' }}>
+              <div key={q.id} className="glass-card" style={{ 
+                padding: '1.25rem',
+                border: selected === 'TIMEOUT' || !selected ? '1px solid rgba(239,68,68,0.3)' : '1px solid var(--border)'
+              }}>
                 <div style={{ marginBottom: '0.75rem' }}>
                   <span style={{ color: 'var(--accent-light)', fontWeight: 700, fontSize: '0.85rem' }}>Q{i + 1}.</span>{' '}
                   <span style={{ fontWeight: 600 }}>{q.text}</span>
@@ -260,15 +271,22 @@ export default function QuizPage() {
                     </button>
                   ))}
                 </div>
-                {selected === 'TIMEOUT' && (
-                  <p style={{ color: 'var(--warning)', fontSize: '0.8rem', marginTop: '0.5rem' }}>⚠️ Timed out — select an answer!</p>
+                {(selected === 'TIMEOUT' || !selected) && (
+                  <p style={{ color: 'var(--danger)', fontSize: '0.8rem', marginTop: '0.5rem', fontWeight: 600 }}>
+                    ⚠️ Not Answered — Select an option!
+                  </p>
                 )}
               </div>
             );
           })}
         </div>
 
-        <button className="btn-primary" style={{ width: '100%', fontSize: '1.1rem', padding: '1rem' }} onClick={handleFinishQuiz} disabled={submitting}>
+        <button 
+          className="btn-primary" 
+          style={{ width: '100%', fontSize: '1.1rem', padding: '1rem', boxShadow: '0 0 30px var(--accent-glow)' }} 
+          onClick={handleFinishQuiz} 
+          disabled={submitting}
+        >
           {submitting ? 'Submitting...' : '🏆 Submit Final Answers & View Results'}
         </button>
       </div>
@@ -277,6 +295,17 @@ export default function QuizPage() {
 
   // ===== QUIZ PHASE =====
   const question = questions[currentIndex];
+  if (!question) {
+    return (
+      <div className="page-container">
+        <div style={{ textAlign: 'center', marginTop: '5rem' }}>
+          <h2>No Questions Available</h2>
+          <p style={{ color: 'var(--text-secondary)' }}>Please wait for the quiz to be updated.</p>
+        </div>
+      </div>
+    );
+  }
+
   const dashOffset = showOptions ? (283 * (1 - timeLeft / 10)) : 0;
 
   return (
@@ -332,6 +361,15 @@ export default function QuizPage() {
                   <span>{opt.text}</span>
                 </button>
               ))}
+              {selectedOption && (
+                <button 
+                  className="btn-primary" 
+                  style={{ marginTop: '1rem', width: '100%', animation: 'fadeIn 0.3s ease' }} 
+                  onClick={moveToNext}
+                >
+                  Next Question →
+                </button>
+              )}
             </div>
           )}
         </div>

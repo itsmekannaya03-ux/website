@@ -12,6 +12,7 @@ export default function ResultPage() {
   const router = useRouter();
   const [result, setResult] = useState<ResultData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isPublished, setIsPublished] = useState(false);
   const [showScore, setShowScore] = useState(false);
   const [confetti, setConfetti] = useState<{ id: number; left: number; color: string; delay: number }[]>([]);
 
@@ -23,25 +24,43 @@ export default function ResultPage() {
         if (!meData.user) { router.push('/'); return; }
         if (meData.user.blocked) { router.push('/blocked'); return; }
 
-        // Submit results first
-        const submitRes = await fetch('/api/quiz/submit', { method: 'POST' });
-        const submitData = await submitRes.json();
-        if (submitData.result) {
-          setResult(submitData.result);
-        }
+        // Fetch quiz state first to see if published
+        const pollStatus = async () => {
+          const res = await fetch(`/api/quiz?t=${Date.now()}`, { cache: 'no-store' });
+          const data = await res.json();
+          if (data.quizState?.resultsPublished) {
+            setIsPublished(true);
+            // Submit and get final result
+            const submitRes = await fetch('/api/quiz/submit', { method: 'POST' });
+            const submitData = await submitRes.json();
+            if (submitData.result) {
+              setResult(submitData.result);
+              setTimeout(() => setShowScore(true), 500);
+              // Confetti
+              setConfetti(Array.from({ length: 40 }, (_, i) => ({
+                id: i,
+                left: Math.random() * 100,
+                color: ['#6c63ff', '#a855f7', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4'][Math.floor(Math.random() * 6)],
+                delay: Math.random() * 2,
+              })));
+            }
+            return true;
+          }
+          return false;
+        };
+
+        const isAlreadyPublished = await pollStatus();
         setLoading(false);
 
-        // Trigger animations
-        setTimeout(() => setShowScore(true), 500);
-
-        // Generate confetti
-        const particles = Array.from({ length: 30 }, (_, i) => ({
-          id: i,
-          left: Math.random() * 100,
-          color: ['#6c63ff', '#a855f7', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4'][Math.floor(Math.random() * 6)],
-          delay: Math.random() * 2,
-        }));
-        setConfetti(particles);
+        if (!isAlreadyPublished) {
+          const interval = setInterval(async () => {
+            try {
+              const done = await pollStatus();
+              if (done) clearInterval(interval);
+            } catch { /* retry next time */ }
+          }, 5000); // 5 seconds polling
+          return () => clearInterval(interval);
+        }
       } catch {
         router.push('/');
       }
@@ -53,8 +72,48 @@ export default function ResultPage() {
     return (
       <div className="page-container">
         <div style={{ textAlign: 'center' }}>
-          <img src="/feedex-logo.jpeg" alt="FEEDEX" style={{ width: 80, height: 80, borderRadius: 20, margin: '0 auto 1.5rem', display: 'block' }} />
+          <img src="/feedx-logo.jpeg" alt="FEEDX" style={{ width: 80, height: 80, borderRadius: 20, margin: '0 auto 1.5rem', display: 'block' }} />
           <p style={{ color: 'var(--text-secondary)' }}>Calculating results...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isPublished) {
+    return (
+      <div className="page-container" style={{ background: '#0a0a14' }}>
+        <div className="glass-card" style={{ maxWidth: 500, width: '100%', textAlign: 'center', padding: '3rem' }}>
+          <div className="reveal-loader" style={{ marginBottom: '2rem' }}>
+            <div className="pulse-circle"></div>
+            <div className="pulse-circle" style={{ animationDelay: '0.5s' }}></div>
+            <div className="pulse-circle" style={{ animationDelay: '1s' }}></div>
+            <span style={{ fontSize: '3rem', position: 'relative', zIndex: 10 }}>⏳</span>
+          </div>
+          <h1 style={{ fontSize: '1.8rem', fontWeight: 800, marginBottom: '1rem' }}>Quiz Completed!</h1>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', lineHeight: 1.6 }}>
+            Excellent work! Your answers have been safely recorded.
+          </p>
+          <div style={{ 
+            marginTop: '2rem', 
+            padding: '1.25rem', 
+            background: 'rgba(21,182,214,0.1)', 
+            borderRadius: '15px',
+            border: '1px solid rgba(21,182,214,0.2)'
+          }}>
+            <p style={{ color: 'var(--accent-light)', fontWeight: 600, margin: 0 }}>
+              Waiting for the Admin to publish the final results...
+            </p>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
+              Results will appear automatically once the admin presses "Display Results".
+            </p>
+            <button 
+              className="btn-primary" 
+              style={{ marginTop: '1rem', width: '100%', fontSize: '0.85rem' }}
+              onClick={() => window.location.reload()}
+            >
+              🔄 Refresh Status
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -64,10 +123,7 @@ export default function ResultPage() {
     return (
       <div className="page-container">
         <div className="glass-card" style={{ maxWidth: 450, textAlign: 'center' }}>
-          <p>No results found. Please complete the quiz first.</p>
-          <button className="btn-primary" style={{ marginTop: '1rem' }} onClick={() => router.push('/waiting')}>
-            Go Back
-          </button>
+          <p>Processing your results...</p>
         </div>
       </div>
     );
@@ -95,90 +151,64 @@ export default function ResultPage() {
         />
       ))}
 
-      <div className="glass-card" style={{ maxWidth: 500, width: '100%', textAlign: 'center', position: 'relative', zIndex: 20 }}>
+      <div className="glass-card" style={{ maxWidth: 550, width: '100%', textAlign: 'center', position: 'relative', zIndex: 20, padding: '4rem 2rem' }}>
         <div style={{
-          animation: showScore ? 'scoreReveal 1s ease forwards' : 'none',
+          animation: showScore ? 'scoreReveal 1.2s cubic-bezier(0.17, 0.89, 0.32, 1.49) both' : 'none',
           opacity: showScore ? 1 : 0,
         }}>
-          <div style={{ fontSize: '4rem', marginBottom: '0.5rem' }}>
-            {result.passed ? '🏆' : '📚'}
+          <div style={{ fontSize: '5rem', marginBottom: '1.5rem' }}>
+            {result.passed ? '🎉' : '📖'}
           </div>
 
-          <h1 style={{
-            fontSize: '2rem',
-            fontWeight: 900,
-            marginBottom: '0.5rem',
-            background: result.passed
-              ? 'linear-gradient(135deg, #22c55e, #06b6d4)'
-              : 'linear-gradient(135deg, #f59e0b, #ef4444)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
+          <h2 style={{ fontSize: '1.5rem', color: 'var(--text-secondary)', marginBottom: '1rem', fontWeight: 500 }}>
+            Quiz Completed
+          </h2>
+
+          <h1 style={{ 
+            fontSize: '3.5rem', 
+            fontWeight: 900, 
+            marginBottom: '1.5rem',
+            lineHeight: 1.2
           }}>
-            {result.passed ? 'Congratulations!' : 'Keep Learning!'}
+            You Scored <br />
+            <span style={{ 
+              background: result.passed ? 'linear-gradient(135deg, #22c55e, #06b6d4)' : 'linear-gradient(135deg, #f59e0b, #ef4444)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              fontSize: '4.5rem'
+            }}>
+              {result.totalScore}
+            </span>
+            <span style={{ fontSize: '2rem', color: 'var(--text-secondary)', marginLeft: '10px' }}>
+              out of {result.totalQns}
+            </span>
           </h1>
 
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', fontSize: '1rem' }}>
-            {result.passed
-              ? 'You passed the quiz! Great job!'
-              : 'You didn\'t pass this time. Keep practicing!'}
-          </p>
-
-          {/* Score circle */}
-          <div style={{
-            width: '160px',
-            height: '160px',
-            borderRadius: '50%',
-            background: `conic-gradient(${result.passed ? 'var(--success)' : 'var(--danger)'} ${percentage * 3.6}deg, rgba(100,100,255,0.1) 0deg)`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: '0 auto 2rem',
-            boxShadow: result.passed
-              ? '0 0 40px rgba(34, 197, 94, 0.3)'
-              : '0 0 40px rgba(239, 68, 68, 0.2)',
+          <div style={{ 
+            padding: '1.5rem', 
+            borderRadius: '20px', 
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid var(--border)',
+            display: 'inline-block',
+            marginBottom: '2.5rem'
           }}>
-            <div style={{
-              width: '130px',
-              height: '130px',
-              borderRadius: '50%',
-              background: 'var(--bg-secondary)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}>
-              <span style={{ fontSize: '2.5rem', fontWeight: 900, color: result.passed ? 'var(--success)' : 'var(--danger)' }}>
-                {percentage}%
-              </span>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                {result.totalScore}/{result.totalQns}
-              </span>
-            </div>
+            <p style={{ margin: 0, fontSize: '1.2rem', color: result.passed ? 'var(--success)' : 'var(--danger)', fontWeight: 700 }}>
+              {result.passed ? '✅ SUCCESS: YOU PASSED' : '❌ KEEP TRYING: YOU FAILED'}
+            </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-            <div className="stat-card">
-              <div className="stat-value" style={{ fontSize: '1.75rem' }}>{result.totalScore}</div>
-              <div className="stat-label">Correct</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value" style={{ fontSize: '1.75rem', background: 'linear-gradient(135deg, #ef4444, #f59e0b)', WebkitBackgroundClip: 'text', backgroundClip: 'text' }}>
-                {result.totalQns - result.totalScore}
-              </div>
-              <div className="stat-label">Wrong/Missed</div>
-            </div>
-          </div>
-
-          <div style={{
-            padding: '1rem',
-            borderRadius: '12px',
-            background: result.passed ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
-            border: `1px solid ${result.passed ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
-          }}>
-            <span className={result.passed ? 'badge badge-success' : 'badge badge-danger'} style={{ fontSize: '0.9rem', padding: '0.4rem 1rem' }}>
-              {result.passed ? '✅ PASSED' : '❌ FAILED'}
-            </span>
+          <div>
+            <button 
+              className="btn-primary" 
+              style={{ padding: '1rem 2.5rem', fontSize: '1.1rem' }}
+              onClick={async () => {
+                await fetch('/api/auth/logout', { method: 'POST' });
+                router.push('/');
+              }}
+            >
+              Back to Home
+            </button>
           </div>
         </div>
       </div>

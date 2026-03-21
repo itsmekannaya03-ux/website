@@ -74,8 +74,9 @@ model Result {
 
 model QuizState {
   id        String   @id @default("singleton")
-  isActive  Boolean  @default(false)
-  startTime DateTime?
+  isActive         Boolean   @default(false)
+  resultsPublished Boolean   @default(false)
+  startTime        DateTime?
   duration  Int      @default(30) // minutes
   createdAt DateTime @default(now())
 }

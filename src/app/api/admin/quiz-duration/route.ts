@@ -8,24 +8,12 @@ export async function POST(req: Request) {
     const session = await getSessionUser();
     if (!session || session.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const { isActive, duration } = await req.json();
-
-    const currentState = await prisma.quizState.findUnique({ where: { id: 'singleton' } });
-    const isNewStart = isActive && !currentState?.isActive;
+    const { duration } = await req.json();
 
     const quizState = await prisma.quizState.upsert({
       where: { id: 'singleton' },
-      update: {
-        isActive,
-        duration: duration || 30,
-        startTime: isNewStart ? new Date() : (isActive ? currentState?.startTime : null),
-      },
-      create: {
-        id: 'singleton',
-        isActive,
-        duration: duration || 30,
-        startTime: isActive ? new Date() : null,
-      },
+      update: { duration: Number(duration) || 30 },
+      create: { id: 'singleton', duration: Number(duration) || 30 },
     });
 
     return NextResponse.json({ quizState });

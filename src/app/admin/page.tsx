@@ -3,11 +3,11 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 interface DashboardData {
-  stats: { totalStudents: number; passed: number; failed: number; pending: number };
+  stats: { totalStudents: number; passed: number; failed: number; pending: number; cheatedCount: number };
   toppers: { name: string; email: string; score: number; total: number }[];
   cheatFlags: { id: string; name: string; email: string; reason: string; time: string }[];
   blockedUsers: { id: string; name: string; email: string }[];
-  quizState: { isActive: boolean; startTime: string | null; duration: number } | null;
+  quizState: { isActive: boolean; resultsPublished: boolean; startTime: string | null; duration: number } | null;
   questions: { id: string; text: string; optionA: string; optionB: string; optionC: string; optionD: string; correctOption: string; order: number }[];
 }
 
@@ -20,6 +20,9 @@ export default function AdminPage() {
   const [tab, setTab] = useState<'dashboard' | 'questions' | 'cheats'>('dashboard');
   const [globalTimer, setGlobalTimer] = useState('');
   const [duration, setDuration] = useState(30);
+  const [isEditingDuration, setIsEditingDuration] = useState(false);
+  const [isTogglingQuiz, setIsTogglingQuiz] = useState(false);
+  const [isTogglingResults, setIsTogglingResults] = useState(false);
 
   // New question form
   const [newQ, setNewQ] = useState({ text: '', optionA: '', optionB: '', optionC: '', optionD: '', correctOption: 'A' });
@@ -27,11 +30,13 @@ export default function AdminPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/dashboard');
+      const res = await fetch(`/api/admin/dashboard?t=${Date.now()}`, { cache: 'no-store' });
       if (res.status === 403) { router.push('/'); return; }
       const d = await res.json();
       setData(d);
-      if (d.quizState?.duration) setDuration(d.quizState.duration);
+      if (d.quizState?.duration && !isEditingDuration) {
+        setDuration(d.quizState.duration);
+      }
     } catch { /* ignore */ }
     setLoading(false);
   }, [router]);
@@ -76,13 +81,51 @@ export default function AdminPage() {
   }, [data?.quizState]);
 
   const toggleQuiz = async () => {
+    setIsTogglingQuiz(true);
     const isActive = !data?.quizState?.isActive;
-    await fetch('/api/admin/quiz-state', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ isActive, duration }),
-    });
-    fetchData();
+    
+    // Optimistic Update
+    setData(prev => prev ? {
+      ...prev,
+      quizState: prev.quizState ? { ...prev.quizState, isActive } : { isActive, resultsPublished: false, startTime: new Date().toISOString(), duration }
+    } : null);
+
+    try {
+      await fetch('/api/admin/quiz-state', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive, duration }),
+      });
+      await fetchData();
+    } catch {
+      alert('Failed to update quiz state. Please try again.');
+    } finally {
+      setIsTogglingQuiz(false);
+    }
+  };
+
+  const toggleResultsPublish = async () => {
+    setIsTogglingResults(true);
+    const published = !data?.quizState?.resultsPublished;
+
+    // Optimistic Update
+    setData(prev => prev ? {
+      ...prev,
+      quizState: prev.quizState ? { ...prev.quizState, resultsPublished: published } : null
+    } : null);
+
+    try {
+      await fetch('/api/admin/results-publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ resultsPublished: published }),
+      });
+      await fetchData();
+    } catch {
+      alert('Failed to publish results. Please try again.');
+    } finally {
+      setIsTogglingResults(false);
+    }
   };
 
   const addQuestion = async () => {
@@ -117,7 +160,7 @@ export default function AdminPage() {
     return (
       <div className="page-container">
         <div style={{ textAlign: 'center' }}>
-          <img src="/feedex-logo.jpeg" alt="FEEDEX" style={{ width: 50, height: 50, borderRadius: 14, margin: '0 auto 1.5rem', display: 'block' }} />
+          <img src="/feedx-logo.jpeg" alt="FEEDX" style={{ width: 50, height: 50, borderRadius: 14, margin: '0 auto 1.5rem', display: 'block' }} />
           <p style={{ color: 'var(--text-secondary)' }}>Loading dashboard...</p>
         </div>
       </div>
@@ -135,31 +178,64 @@ export default function AdminPage() {
   const appUrl = typeof window !== 'undefined' ? window.location.origin : (process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
 
   return (
-    <div style={{ minHeight: '100vh', padding: '1.5rem' }}>
+    <div style={{ minHeight: '100vh', padding: '1.5rem', background: '#0a0a14' }}>
+      {/* Big Wall Clock Style Timer at Top */}
+      {data.quizState?.isActive && globalTimer && (
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          marginBottom: '3rem',
+          animation: 'fadeIn 0.8s ease-out'
+        }}>
+          <div style={{
+            background: 'rgba(15,15,35,0.8)',
+            border: `4px solid ${globalTimer === 'TIME UP' ? 'var(--danger)' : 'var(--accent)'}`,
+            borderRadius: '50px',
+            padding: '1.5rem 4rem',
+            boxShadow: `0 0 60px ${globalTimer === 'TIME UP' ? 'rgba(239,68,68,0.3)' : 'var(--accent-glow)'}`,
+            textAlign: 'center'
+          }}>
+            <p style={{
+              color: 'var(--text-secondary)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.3rem',
+              fontSize: '0.9rem',
+              fontWeight: 800,
+              marginBottom: '0.5rem'
+            }}>Time Remaining</p>
+            <h1 style={{
+              fontSize: '6rem',
+              fontWeight: 900,
+              fontFamily: 'monospace',
+              color: globalTimer === 'TIME UP' ? 'var(--danger)' : 'white',
+              margin: 0,
+              lineHeight: 1,
+              textShadow: '0 0 20px rgba(255,255,255,0.1)'
+            }}>
+              {globalTimer}
+            </h1>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <img src="/feedex-logo.jpeg" alt="FEEDEX" style={{ width: 50, height: 50, borderRadius: 14, objectFit: 'cover' }} />
+          <img src="/feedx-logo.jpeg" alt="FEEDX" style={{ width: 50, height: 50, borderRadius: 14, objectFit: 'cover' }} />
           <div>
             <h1 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Admin Dashboard</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Quiz Platform Control Center</p>
           </div>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          {data.quizState?.isActive && globalTimer && (
-            <div style={{
-              background: globalTimer === 'TIME UP' ? 'rgba(239,68,68,0.15)' : 'rgba(108,99,255,0.15)',
-              padding: '0.6rem 1.25rem',
-              borderRadius: '12px',
-              fontSize: '1.3rem',
-              fontWeight: 800,
-              fontFamily: 'monospace',
-              color: globalTimer === 'TIME UP' ? 'var(--danger)' : 'var(--accent)',
-              border: `1px solid ${globalTimer === 'TIME UP' ? 'rgba(239,68,68,0.3)' : 'var(--border)'}`,
-            }}>
-              ⏱️ {globalTimer}
-            </div>
-          )}
+          <button 
+            className="btn-primary" 
+            onClick={() => fetchData()} 
+            style={{ padding: '0.6rem 1rem', fontSize: '0.85rem', background: 'rgba(21,182,214,0.1)', border: '1px solid var(--border)' }}
+          >
+            🔄 Refresh
+          </button>
           <button className="btn-danger" onClick={handleLogout} style={{ padding: '0.6rem 1rem', fontSize: '0.85rem' }}>
             Logout
           </button>
@@ -212,6 +288,10 @@ export default function AdminPage() {
               <div className="stat-value" style={{ background: 'linear-gradient(135deg, #f59e0b, #06b6d4)', WebkitBackgroundClip: 'text', backgroundClip: 'text' }}>{data.stats.pending}</div>
               <div className="stat-label">Pending</div>
             </div>
+            <div className="stat-card">
+              <div className="stat-value" style={{ background: 'linear-gradient(135deg, #ef4444, #f59e0b)', WebkitBackgroundClip: 'text', backgroundClip: 'text' }}>{data.stats.cheatedCount}</div>
+              <div className="stat-label">Cheated</div>
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
@@ -243,23 +323,68 @@ export default function AdminPage() {
                 <label style={{ display: 'block', marginBottom: '0.4rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                   Duration (minutes)
                 </label>
-                <input
-                  type="number"
-                  className="input-field"
-                  value={duration}
-                  onChange={e => setDuration(Number(e.target.value))}
-                  min={1}
-                  max={120}
-                  disabled={data.quizState?.isActive}
-                />
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    type="number"
+                    className="input-field"
+                    value={duration}
+                    onFocus={() => setIsEditingDuration(true)}
+                    onBlur={() => setIsEditingDuration(false)}
+                    onChange={e => setDuration(Number(e.target.value))}
+                    min={1}
+                    max={120}
+                    style={{ flex: 1 }}
+                  />
+                  <button 
+                    className="btn-primary" 
+                    style={{ 
+                      width: 'auto', 
+                      padding: '0 1rem', 
+                      fontSize: '0.85rem',
+                      opacity: (duration === data.quizState?.duration) ? 0.5 : 1,
+                      cursor: (duration === data.quizState?.duration) ? 'not-allowed' : 'pointer'
+                    }}
+                    disabled={duration === data.quizState?.duration}
+                    onClick={async () => {
+                      const res = await fetch('/api/admin/quiz-duration', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ duration }),
+                      });
+                      if (res.ok) {
+                        alert(`Duration updated to ${duration} minutes!`);
+                        fetchData();
+                      }
+                    }}
+                  >
+                    Set
+                  </button>
+                </div>
               </div>
               <button
                 className={data.quizState?.isActive ? 'btn-danger' : 'btn-success'}
-                style={{ width: '100%', marginBottom: '1.5rem' }}
+                style={{ width: '100%', marginBottom: '1rem', opacity: isTogglingQuiz ? 0.7 : 1 }}
                 onClick={toggleQuiz}
+                disabled={isTogglingQuiz}
               >
-                {data.quizState?.isActive ? '⏹️ Stop Quiz' : '▶️ Start Quiz'}
+                {isTogglingQuiz ? '⌛ Processing...' : (data.quizState?.isActive ? '⏹️ Stop Quiz' : '▶️ Start Quiz')}
               </button>
+
+              {!data.quizState?.isActive && (
+                <button
+                  className="btn-primary"
+                  style={{ 
+                    width: '100%', 
+                    background: data.quizState?.resultsPublished ? 'var(--danger)' : 'var(--success)',
+                    border: 'none',
+                    opacity: isTogglingResults ? 0.7 : 1
+                  }}
+                  onClick={toggleResultsPublish}
+                  disabled={isTogglingResults}
+                >
+                  {isTogglingResults ? '⌛ Processing...' : (data.quizState?.resultsPublished ? '🚫 Hide Results' : '📢 Display Results to Students')}
+                </button>
+              )}
             </div>
           </div>
 

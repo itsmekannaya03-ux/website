@@ -1,0 +1,167 @@
+[
+  {
+    "id": 1,
+    "question": "What is the correct way to start the main function in C?",
+    "options": [
+      "void main()",
+      "int main()",
+      "main()",
+      "function main()"
+    ],
+    "answer": "int main()"
+  },
+  {
+    "id": 2,
+    "question": "Which header file is most commonly used for input/output functions like printf() and scanf()?",
+    "options": [
+      "#include <math.h>",
+      "#include <string.h>",
+      "#include <stdio.h>",
+      "#include <conio.h>"
+    ],
+    "answer": "#include <stdio.h>"
+  },
+  {
+    "id": 3,
+    "question": "What does the semicolon ( ; ) represent in C language?",
+    "options": [
+      "End of program",
+      "Statement terminator",
+      "Start of comment",
+      "Block beginning"
+    ],
+    "answer": "Statement terminator"
+  },
+  {
+    "id": 4,
+    "question": "Which of these is NOT a valid data type in C?",
+    "options": [
+      "int",
+      "float",
+      "number",
+      "char"
+    ],
+    "answer": "number"
+  },
+  {
+    "id": 5,
+    "question": "What is the format specifier for printing an integer in printf()?",
+    "options": [
+      "%f",
+      "%c",
+      "%d",
+      "%s"
+    ],
+    "answer": "%d"
+  },
+  {
+    "id": 6,
+    "question": "What will be the output of this code?\nprintf(\"Hello\");\nprintf(\"World\");",
+    "options": [
+      "HelloWorld",
+      "Hello World",
+      "Hello\\nWorld",
+      "Compilation error"
+    ],
+    "answer": "HelloWorld"
+  },
+  {
+    "id": 7,
+    "question": "Which symbol is used for single-line comment in C?",
+    "options": [
+      "/* comment */",
+      "// comment",
+      "# comment",
+      "-- comment"
+    ],
+    "answer": "// comment"
+  },
+  {
+    "id": 8,
+    "question": "What is the correct syntax to declare a variable named age of type integer?",
+    "options": [
+      "int age;",
+      "integer age;",
+      "age int;",
+      "declare age as int;"
+    ],
+    "answer": "int age;"
+  },
+  {
+    "id": 9,
+    "question": "Which function is used to take input from the user in C?",
+    "options": [
+      "print()",
+      "input()",
+      "scanf()",
+      "read()"
+    ],
+    "answer": "scanf()"
+  },
+  {
+    "id": 10,
+    "question": "What will be the output?\nint x = 10;\nprintf(\"%d\", x + 5);",
+    "options": [
+      "10",
+      "15",
+      "x+5",
+      "Error"
+    ],
+    "answer": "15"
+  },
+  {
+    "id": 11,
+    "question": "Which of these is the correct way to print a floating-point number with 2 decimal places?",
+    "options": [
+      "printf(\"%f\", num);",
+      "printf(\"%.2f\", num);",
+      "printf(\"%2f\", num);",
+      "printf(\"%float\", num);"
+    ],
+    "answer": "printf(\"%.2f\", num);"
+  },
+  {
+    "id": 12,
+    "question": "What is wrong with this code?\n#include <stdio.h>\nint main()\n{\n    int a = 5\n    printf(\"%d\", a);\n    return 0;\n}",
+    "options": [
+      "Missing semicolon after variable declaration",
+      "Wrong header file",
+      "main should be void",
+      "printf is wrong"
+    ],
+    "answer": "Missing semicolon after variable declaration"
+  },
+  {
+    "id": 13,
+    "question": "What does \\n do inside printf()?",
+    "options": [
+      "Prints new line",
+      "Prints backslash",
+      "Prints tab space",
+      "Prints double quote"
+    ],
+    "answer": "Prints new line"
+  },
+  {
+    "id": 14,
+    "question": "Which format specifier is used for a single character?",
+    "options": [
+      "%s",
+      "%d",
+      "%c",
+      "%f"
+    ],
+    "answer": "%c"
+  },
+  {
+    "id": 15,
+    "question": "What will be printed by this line?\nprintf(\"%d + %d = %d\", 4, 6, 4+6);",
+    "options": [
+      "4 + 6 = 10",
+      "%d + %d = %d",
+      "4 6 10",
+      "Error"
+    ],
+    "answer": "4 + 6 = 10"
+  }
+]
