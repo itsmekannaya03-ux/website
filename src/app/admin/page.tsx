@@ -28,18 +28,18 @@ export default function AdminPage() {
   const [newQ, setNewQ] = useState({ text: '', optionA: '', optionB: '', optionC: '', optionD: '', correctOption: 'A' });
   const [saving, setSaving] = useState(false);
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (t?: number) => {
     try {
-      const res = await fetch(`/api/admin/dashboard?t=${Date.now()}`, { cache: 'no-store' });
+      const res = await fetch(`/api/admin/dashboard?t=${t || Date.now()}`, { cache: 'no-store' });
       if (res.status === 403) { router.push('/'); return; }
       const d = await res.json();
       setData(d);
       if (d.quizState?.duration && !isEditingDuration) {
         setDuration(d.quizState.duration);
       }
-    } catch { /* ignore */ }
+    } catch (e) { console.error(e); }
     setLoading(false);
-  }, [router]);
+  }, [router, isEditingDuration]);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -49,10 +49,10 @@ export default function AdminPage() {
         router.push('/');
         return;
       }
-      fetchData();
+      fetchData(Date.now());
     };
     checkAuth();
-    const interval = setInterval(fetchData, 5000);
+    const interval = setInterval(() => fetchData(Date.now()), 5000);
     return () => clearInterval(interval);
   }, [router, fetchData]);
 
@@ -83,7 +83,7 @@ export default function AdminPage() {
   const toggleQuiz = async () => {
     setIsTogglingQuiz(true);
     const isActive = !data?.quizState?.isActive;
-    
+
     // Optimistic Update
     setData(prev => prev ? {
       ...prev,
@@ -229,9 +229,9 @@ export default function AdminPage() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-          <button 
-            className="btn-primary" 
-            onClick={() => fetchData()} 
+          <button
+            className="btn-primary"
+            onClick={() => fetchData(Date.now())}
             style={{ padding: '0.6rem 1rem', fontSize: '0.85rem', background: 'rgba(21,182,214,0.1)', border: '1px solid var(--border)' }}
           >
             🔄 Refresh
@@ -335,11 +335,11 @@ export default function AdminPage() {
                     max={120}
                     style={{ flex: 1 }}
                   />
-                  <button 
-                    className="btn-primary" 
-                    style={{ 
-                      width: 'auto', 
-                      padding: '0 1rem', 
+                  <button
+                    className="btn-primary"
+                    style={{
+                      width: 'auto',
+                      padding: '0 1rem',
                       fontSize: '0.85rem',
                       opacity: (duration === data.quizState?.duration) ? 0.5 : 1,
                       cursor: (duration === data.quizState?.duration) ? 'not-allowed' : 'pointer'
@@ -373,8 +373,8 @@ export default function AdminPage() {
               {!data.quizState?.isActive && (
                 <button
                   className="btn-primary"
-                  style={{ 
-                    width: '100%', 
+                  style={{
+                    width: '100%',
                     background: data.quizState?.resultsPublished ? 'var(--danger)' : 'var(--success)',
                     border: 'none',
                     opacity: isTogglingResults ? 0.7 : 1
